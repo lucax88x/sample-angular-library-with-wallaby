@@ -3,28 +3,46 @@ var path = require('path');
 
 var compilerOptions = Object.assign(
   require('./tsconfig.json').compilerOptions,
-  require('./src/tsconfig.spec.json').compilerOptions);
+  require('./src/tsconfig.spec.json').compilerOptions
+);
 
 compilerOptions.module = 'CommonJs';
 
-module.exports = function (wallaby) {
-
+module.exports = function(wallaby) {
   var webpackPostprocessor = wallabyWebpack({
     entryPatterns: [
       'src/wallabyTest.js',
-      'src/**/*spec.js'
+      'src/**/*spec.js',
+
+      // Added for libraries
+      'projects/**/src/**/*spec.js'
     ],
 
     module: {
       rules: [
-        {test: /\.css$/, loader: ['raw-loader']},
-        {test: /\.html$/, loader: 'raw-loader'},
-        {test: /\.ts$/, loader: '@ngtools/webpack', include: /node_modules/, query: {tsConfigPath: 'tsconfig.json'}},
-        {test: /\.js$/, loader: 'angular2-template-loader', exclude: /node_modules/},
-        {test: /\.styl$/, loaders: ['raw-loader', 'stylus-loader']},
-        {test: /\.less$/, loaders: ['raw-loader', {loader: 'less-loader', options: {paths: [__dirname]}}]},
-        {test: /\.scss$|\.sass$/, loaders: ['raw-loader', 'sass-loader']},
-        {test: /\.(jpg|png|svg)$/, loader: 'url-loader?limit=128000'}
+        { test: /\.css$/, loader: ['raw-loader'] },
+        { test: /\.html$/, loader: 'raw-loader' },
+        {
+          test: /\.ts$/,
+          loader: '@ngtools/webpack',
+          include: /node_modules/,
+          query: { tsConfigPath: 'tsconfig.json' }
+        },
+        {
+          test: /\.js$/,
+          loader: 'angular2-template-loader',
+          exclude: /node_modules/
+        },
+        { test: /\.styl$/, loaders: ['raw-loader', 'stylus-loader'] },
+        {
+          test: /\.less$/,
+          loaders: [
+            'raw-loader',
+            { loader: 'less-loader', options: { paths: [__dirname] } }
+          ]
+        },
+        { test: /\.scss$|\.sass$/, loaders: ['raw-loader', 'sass-loader'] },
+        { test: /\.(jpg|png|svg)$/, loader: 'url-loader?limit=128000' }
       ]
     },
 
@@ -34,7 +52,13 @@ module.exports = function (wallaby) {
         path.join(wallaby.projectCacheDir, 'src/app'),
         path.join(wallaby.projectCacheDir, 'src'),
         'node_modules'
-      ]
+      ],
+      alias: {
+        'test-lib': path.join(
+          wallaby.projectCacheDir,
+          'projects/test-lib/src/public_api.js'
+        )
+      }
     },
     node: {
       fs: 'empty',
@@ -46,14 +70,30 @@ module.exports = function (wallaby) {
 
   return {
     files: [
-      {pattern: 'src/**/*.+(ts|css|less|scss|sass|styl|html|json|svg)', load: false},
-      {pattern: 'src/**/*.d.ts', ignore: true},
-      {pattern: 'src/**/*spec.ts', ignore: true}
+      {
+        pattern: 'src/**/*.+(ts|css|less|scss|sass|styl|html|json|svg)',
+        load: false
+      },
+      { pattern: 'src/**/*.d.ts', ignore: true },
+      { pattern: 'src/**/*spec.ts', ignore: true },
+
+      // Added for libraries
+      {
+        pattern:
+          'projects/**/src/**/*.+(ts|css|less|scss|sass|styl|html|json|svg)',
+        load: false
+      },
+      { pattern: 'projects/**/src/**/*.d.ts', ignore: true },
+      { pattern: 'projects/**/src/**/*spec.ts', ignore: true }
     ],
 
     tests: [
-      {pattern: 'src/**/*spec.ts', load: false},
-      {pattern: 'src/**/*e2e-spec.ts', ignore: true}
+      { pattern: 'src/**/*spec.ts', load: false },
+      { pattern: 'src/**/*e2e-spec.ts', ignore: true },
+
+      // Added for libraries
+      { pattern: 'projects/**/src/**/*spec.ts', load: false },
+      { pattern: 'projects/**/src/**/*e2e-spec.ts', ignore: true }
     ],
 
     testFramework: 'jasmine',
@@ -62,9 +102,12 @@ module.exports = function (wallaby) {
       '**/*.ts': wallaby.compilers.typeScript(compilerOptions)
     },
 
-    middleware: function (app, express) {
+    middleware: function(app, express) {
       var path = require('path');
-      app.use('/favicon.ico', express.static(path.join(__dirname, 'src/favicon.ico')));
+      app.use(
+        '/favicon.ico',
+        express.static(path.join(__dirname, 'src/favicon.ico'))
+      );
       app.use('/assets', express.static(path.join(__dirname, 'src/assets')));
     },
 
@@ -74,7 +117,7 @@ module.exports = function (wallaby) {
 
     postprocessor: webpackPostprocessor,
 
-    setup: function () {
+    setup: function() {
       window.__moduleBundler.loadTests();
     },
 
